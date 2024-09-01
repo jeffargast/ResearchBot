@@ -61,7 +61,7 @@ async function makeRequestWithRetries(options, data, maxRetries = 5, initialDela
 
 async function askLLM(messages, temperature) {
   const data = JSON.stringify({
-    model: 'gpt-4o',
+    model: 'gpt-4o-mini',
     messages: messages,
     max_tokens: 4000,
     temperature: temperature
@@ -73,8 +73,7 @@ async function askLLM(messages, temperature) {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${API_KEY}`,
-      'Content-Type': 'application/json',
-      'Content-Length': data.length
+      'Content-Type': 'application/json'
     }
   };
 

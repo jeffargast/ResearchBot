@@ -1,6 +1,6 @@
 # ResearchBot
 
-A Node.js script that uses OpenAI's GPT-4 API to explore and learn about a given topic through iterative questioning.
+A Node.js script that uses OpenAI's API to explore and learn about a given topic through iterative questioning.
 
 ## Features
 
