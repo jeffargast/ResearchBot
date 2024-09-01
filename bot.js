@@ -97,10 +97,10 @@ async function main() {
   }
 
   let messages = [
-    { role: "user", content: `I am learning everything I can about ${topic}. List the key things I need to know. Include things that are lesser known. Be concise and factual. Provide references as links. Use markdown.` },
+    { role: "user", content: `I am learning everything I can about ${topic}. List the key things I need to know. Include things that are lesser known. Be concise. Be factual. Provide references. Use markdown.` },
   ];
 
-  let information = await askLLM(messages, 0.0);
+  let information = await answerQuestions(messages, topic);
   messages.push({ role: "assistant", content: information });
   console.log("Initial Information:\n", information);
 
@@ -119,7 +119,7 @@ async function main() {
 }
 
 async function generateQuestions(messages, topic) {
-  const systemMessage = `You are an expert in ${topic}. Be concise.`;
+  const systemMessage = `You are an expert in ${topic}.`;
   const userMessage = `What are three follow up questions that could be asked? Do not repeat questions. Be concise. List the questions only. No formatting. Do not explain.`;
 
   let questions = await askLLM([
@@ -128,12 +128,12 @@ async function generateQuestions(messages, topic) {
     { role: "user", content: userMessage },
   ], 1.0);
 
-  questions += '\nProvide new information. Do not repeat previous answers.'
+  questions += '\nProvide new information. Do not repeat previous answers. Be concise. Be factual. Provide references. Use markdown.'
   return questions;
 }
 
 async function answerQuestions(messages, topic) {
-  const systemMessage = `You are an expert in ${topic}. Be concise. Be factual. Provide references as links. Use markdown.`
+  const systemMessage = `You are an expert in ${topic}.`
 
   return await askLLM([
     { role: 'system', content: systemMessage },
