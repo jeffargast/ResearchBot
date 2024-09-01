@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 //
 // ResearchBot
 //
@@ -16,26 +14,8 @@ if (!API_KEY) {
   process.exit(1);
 }
 
-async function askLLM(messages, temperature) {
+async function makeRequest(options, data) {
   return new Promise((resolve, reject) => {
-    const data = JSON.stringify({
-      model: 'gpt-4o',
-      messages: messages,
-      max_tokens: 4000,
-      temperature: temperature
-    });
-
-    const options = {
-      hostname: 'api.openai.com',
-      path: '/v1/chat/completions',
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json',
-        'Content-Length': data.length
-      }
-    };
-
     const req = https.request(options, (res) => {
       let responseData = '';
 
@@ -44,23 +24,68 @@ async function askLLM(messages, temperature) {
       });
 
       res.on('end', () => {
-        try {
-          const parsedData = JSON.parse(responseData);
-          resolve(parsedData.choices[0].message.content.trim());
-        } catch (error) {
-          console.error(error);
-          reject(new Error('Error parsing API response'));
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(responseData);
+        } else {
+          //reject(`Failed with status code ${res.statusCode}\n<responseData begin>${responseData}<responseData end>\n<options begin>${options}<options end>\n<data begin>${data}<data end>`);
+          reject(`Failed with status code: ${res.statusCode}\nresponseData: ${responseData}`);
         }
       });
     });
 
     req.on('error', (error) => {
-      reject(new Error(`Error calling OpenAI API: ${error.message}`));
+      reject(new Error(`Error calling OpenAI API: ${error}`));
     });
 
     req.write(data);
     req.end();
   });
+}
+
+async function makeRequestWithRetries(options, data, maxRetries = 5, initialDelay = 1000) {
+  let retries = 0;
+  let delay = initialDelay;
+
+  while (retries < maxRetries) {
+    try {
+      return await makeRequest(options, data);
+    } catch (error) {
+      if (retries === maxRetries - 1) throw error;
+      console.error(`Request failed, retrying (${retries + 1}/${maxRetries}):`, error);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      delay *= 2;
+      retries++;
+    }
+  }
+}
+
+async function askLLM(messages, temperature) {
+  const data = JSON.stringify({
+    model: 'gpt-4o',
+    messages: messages,
+    max_tokens: 4000,
+    temperature: temperature
+  });
+
+  const options = {
+    hostname: 'api.openai.com',
+    path: '/v1/chat/completions',
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json',
+      'Content-Length': data.length
+    }
+  };
+
+  try {
+    const responseData = await makeRequestWithRetries(options, data);
+    const parsedData = JSON.parse(responseData);
+    return parsedData.choices[0].message.content.trim();
+  } catch (error) {
+    console.error("Failed on OpenAI calls after multiple retries.");
+    return "";
+  }
 }
 
 async function main() {
@@ -103,7 +128,7 @@ async function generateQuestions(messages, topic) {
     { role: "user", content: userMessage },
   ], 1.0);
 
-  questions += '\nProvide new information. Do not repeat previous answers. Go deep.'
+  questions += '\nProvide new information. Do not repeat previous answers.'
   return questions;
 }
 

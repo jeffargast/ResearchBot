@@ -1,4 +1,4 @@
-# OpenAI GPT-4 Topic Explorer
+# ResearchBot
 
 A Node.js script that uses OpenAI's GPT-4 API to explore and learn about a given topic through iterative questioning.
 
